@@ -2000,6 +2000,8 @@ void *gps_task(void *arg)
 
 	for (iumd=1; iumd<numd; iumd++)
 	{
+		key = 0; // Initialize key value
+
 		// Press 'q' to abort
 		if (_kbhit())
 		{
@@ -2013,26 +2015,22 @@ void *gps_task(void *arg)
 		{
 			key_direction = UNDEF;
 
-			if(_kbhit())
+			switch (key)
 			{
-				key = _getch();
-				switch (key)
-				{
-				case NORTH_KEY:
-					key_direction = NORTH;
-					break;
-				case SOUTH_KEY:
-					key_direction = SOUTH;
-					break;
-				case EAST_KEY:
-					key_direction = EAST;
-					break;
-				case WEST_KEY:
-					key_direction = WEST;
-					break;
-				default:
-					break;
-				}
+			case NORTH_KEY:
+				key_direction = NORTH;
+				break;
+			case SOUTH_KEY:
+				key_direction = SOUTH;
+				break;
+			case EAST_KEY:
+				key_direction = EAST;
+				break;
+			case WEST_KEY:
+				key_direction = WEST;
+				break;
+			default:
+				break;
 			}
 
 			if ((key_direction!=UNDEF)&&(direction==key_direction))
