@@ -17,6 +17,10 @@
 #include "limegps.h"
 #include <conio.h> // for interactive mode
 
+#ifdef USE_GAMEPAD
+#include "libgamepad/GamePad.h"
+#endif
+
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
 	  50,  53,  56,  59,  62,  65,  68,  71,  74,  77,  80,  83,  86,  89,  91,  94,
@@ -1696,11 +1700,12 @@ void *gps_task(void *arg)
 
 	int interactive = FALSE;
 	int key;
-	int key_direction;
-	int direction = UNDEF;
+	int button; // for gamepad
 	double velocity = 0.0;
+	double heading = 0.0; 
 	double tmat[3][3];
 	double neu[3];
+	
 
 	////////////////////////////////////////////////////////////
 	// Read options
@@ -1809,6 +1814,18 @@ void *gps_task(void *arg)
 	{
 		printf("Enable interactive mode.\n");
 		numd = iduration;
+
+#ifdef USE_GAMEPAD
+		// Initialize the game pad library
+		GamepadInit();
+
+		// Search a game pad
+		GamepadUpdate();
+		if (GamepadIsConnected(GAMEPAD_0))
+			printf("Find an XBOX 360 game pad!\n");
+		else
+			printf("No game pad is found.\n");
+#endif
 	}
 
 	printf("xyz = %11.1f, %11.1f, %11.1f\n", xyz[0][0], xyz[0][1], xyz[0][2]);
@@ -2000,12 +2017,13 @@ void *gps_task(void *arg)
 
 	for (iumd=1; iumd<numd; iumd++)
 	{
-		key = 0; // Initialize key value
+		key = 0; // Initialize key input
 
 		// Press 'q' to abort
 		if (_kbhit())
 		{
 			key = _getch();
+
 			if (key == 'q' || key == 'Q')
 				goto abort;
 		}
@@ -2013,39 +2031,71 @@ void *gps_task(void *arg)
 		// Interactive mode
 		if (interactive)
 		{
-			key_direction = UNDEF;
-
+			// Check key input
 			switch (key)
 			{
 			case NORTH_KEY:
-				key_direction = NORTH;
+				heading = 0.0;
 				break;
 			case SOUTH_KEY:
-				key_direction = SOUTH;
+				heading = 180.0;
 				break;
 			case EAST_KEY:
-				key_direction = EAST;
+				heading = 90.0;
 				break;
 			case WEST_KEY:
-				key_direction = WEST;
+				heading = 270.0;
 				break;
 			default:
+				key = 0; // No valid key input
 				break;
 			}
 
-			if ((key_direction!=UNDEF)&&(direction==key_direction))
+			// Check gamepad if available
+			button = 0;
+#ifdef USE_GAMEPAD
+			GamepadUpdate();
+			if (GamepadIsConnected(GAMEPAD_0))
+			{
+				if (GamepadButtonDown(GAMEPAD_0, BUTTON_B))
+					button = 1;
+
+				// Heading
+				if (GamepadButtonDown(GAMEPAD_0, BUTTON_DPAD_RIGHT))
+				{
+					// Turn right
+					heading += DEL_TURN;
+					if (heading >= 360.0)
+						heading -= 360.0;
+				}
+				else if (GamepadButtonDown(GAMEPAD_0, BUTTON_DPAD_LEFT))
+				{
+					// Turn left
+					heading -= DEL_TURN;
+					if (heading < 0.0)
+						heading += 360.0;
+				}
+			}
+#endif
+			if ((key != 0) || (button != 0))
 			{
 				// Accelerate toward the key direction
-				if (velocity<MAX_VEL)
+				if (velocity < MAX_VEL)
+				{
 					velocity += DEL_VEL;
+					if (velocity > MAX_VEL)
+						velocity = MAX_VEL;
+				}
 			}
 			else
 			{
 				// Deaccelerate and stop
-				if (velocity>=0.0)
+				if (velocity > 0.0)
+				{
 					velocity -= DEL_VEL;
-				else
-					direction = key_direction; // then change the direction
+					if (velocity < 0.0)
+						velocity = 0.0;
+				}
 			}
 
 			// Stay at the current location
@@ -2053,35 +2103,18 @@ void *gps_task(void *arg)
 			xyz[iumd][1] = xyz[iumd-1][1];
 			xyz[iumd][2] = xyz[iumd-1][2];
 
-			if ((direction!=UNDEF)&&(velocity>=0.0))
+			// Update the user location
+			if (velocity>0.0)
 			{
-				// Update the user location
-				neu[0] = 0.0;
-				neu[1] = 0.0;
+				neu[0] = 0.1*velocity*cos(heading / R2D);
+				neu[1] = 0.1*velocity*sin(heading / R2D);
 				neu[2] = 0.0;
-
-				switch(direction)
-				{
-				case NORTH:
-					neu[0] = velocity * 0.1;
-					break;
-				case SOUTH:
-					neu[0] = -velocity * 0.1;
-					break;
-				case EAST:
-					neu[1] = velocity * 0.1;
-					break;
-				case WEST:
-					neu[1] = -velocity * 0.1;
-				default:
-					break;
-				}
 
 				xyz[iumd][0] += tmat[0][0]*neu[0] + tmat[1][0]*neu[1] + tmat[2][0]*neu[2];
 				xyz[iumd][1] += tmat[0][1]*neu[0] + tmat[1][1]*neu[1] + tmat[2][1]*neu[2];
 				xyz[iumd][2] += tmat[0][2]*neu[0] + tmat[1][2]*neu[1] + tmat[2][2]*neu[2];
 			}
-		}
+		} // End of interactive mode
 
 		for (i=0; i<MAX_CHAN; i++)
 		{

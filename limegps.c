@@ -180,6 +180,9 @@ void usage(char *progname)
 		"  -d <duration>    Duration [sec] (max: %.0f)\n"
 		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n"
 		"  -i               Interactive mode: North='%c', South='%c', East='%c', West='%c'\n"
+#ifdef USE_GAMEPAD
+		"                   (Xbox gamepad: Turn Left=<, Turn Right=>, Forward=B)\n"
+#endif
 		"  -I               Disable ionospheric delay for spacecraft scenario\n",
 		progname,
 		((double)USER_MOTION_SIZE)/10.0, 
@@ -208,8 +211,10 @@ int main(int argc, char *argv[])
 	s.opt.verb = TRUE;
 	s.opt.nmeaGGA = FALSE;
 	s.opt.staticLocationMode = TRUE;
-	s.opt.llh[0] = 35.6811673 / R2D;
-	s.opt.llh[1] = 139.7648576 / R2D;
+	//s.opt.llh[0] = 35.6811673 / R2D;
+	//s.opt.llh[1] = 139.7648576 / R2D;
+	s.opt.llh[0] = 40.7850916 / R2D;
+	s.opt.llh[1] = -73.968285 / R2D;
 	s.opt.llh[2] = 10.0;
 	s.opt.interactive = FALSE;
 	s.opt.timeoverwrite = FALSE;

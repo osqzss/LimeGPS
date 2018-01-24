@@ -31,18 +31,20 @@
 #define SOUTH 2
 #define EAST  3
 #define WEST  4
-#define UP    5
-#define DOWN  6
+
 // Interactive keys
 #define NORTH_KEY 'w'
 #define SOUTH_KEY 's'
 #define EAST_KEY  'd'
 #define WEST_KEY  'a'
-#define UP_KEY    'e'
-#define DOWN_KEY  'q'
-// Interactive motion
+
+// Interactive mode
 #define MAX_VEL 2.7 // 2.77 m/s = 10 km/h
-#define DEL_VEL 0.2
+#define DEL_VEL 0.4
+#define DEL_TURN 4.5 // 45 deg/s
+
+// Activate gamepad support
+//#define USE_GAMEPAD
 
 typedef struct {
 	char navfile[MAX_CHAR];
