@@ -3,14 +3,14 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <LimeSuite.h> // at C:\Program Files\PothosSDR\include\lime
+#include <lime/LimeSuite.h> // at C:\Program Files\PothosSDR\include
 #include <string.h>
 #include <time.h>
 #ifdef _WIN32
 // To avoid conflict between time.h and pthread.h on Windows
 #define HAVE_STRUCT_TIMESPEC
 #endif
-#include <pthread.h> // at pthreads-w32-2-9-1-release\Pre-built.2\include
+#include <pthread.h> // at C:\Program Files\PothosSDR\include
 #include "gpssim.h"
 
 #define TX_FREQUENCY    1575420000

@@ -20,7 +20,7 @@ Options:
 
 ### Build on Windows with Visual Studio
 
-Follow the instructions at [Lime Suite wiki page](https://wiki.myriadrf.org/Lime_Suite) and install the Pothos SDR development environment. Assume you already downloaded pthreads-win32 files.
+Follow the instructions at [Lime Suite wiki page](https://wiki.myriadrf.org/Lime_Suite) and install the Pothos SDR development environment.
 
 1. Start Visual Studio.
 2. Create an empty project for a console application.
@@ -28,12 +28,10 @@ Follow the instructions at [Lime Suite wiki page](https://wiki.myriadrf.org/Lime
  * __limegps.c__ and __limegps.h__
  * __gpssim.c__ and __gpssim.h__
  * __getopt.c__ and __getopt.h__
-4. Add the paths to the following folders in `Configuration Properties -> C/C++ -> General -> Additional Include Directories`:
- * __pthreads-w32-2-9-1-release/Pre-built.2/include__ for pthread.h
- * __PothosSDR/include/lime__ for LimeSuite.h
-5. Add the paths to the following folders in `Configuration Properties -> Linker -> General -> Additional Library Directories`:
- * __pthreads-w32-2-9-1-release/Pre-built.2/lib/x64__ for pthreadVC2.lib
- * __PothosSDR/lib__ for LimeSuite.lib
+4. Add the path to the following folder in `Configuration Properties -> C/C++ -> General -> Additional Include Directories`:
+ * __PothosSDR/include__ for pthread.h and lime/LimeSuite.h
+5. Add the path to the following folder in `Configuration Properties -> Linker -> General -> Additional Library Directories`:
+ * __PothosSDR/lib__ for pthreadVC2.lib and LimeSuite.lib
 6. Specify the name of the additional libraries in `Configuration Properties -> Linker -> Input -> Additional Dependencies`:
  * __pthreadVC2.lib__
  * __LimeSuite.lib__
