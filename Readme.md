@@ -1,7 +1,7 @@
 # LimeGPS
 
 Yet another crude experimental implimentation of [gps-sdr-sim](https://github.com/osqzss/gps-sdr-sim) for real-time signal generation.
-The code works with LimeSDR and has been tested on Windows only. The default TX antenna port is TX1_1.
+The code works with LimeSDR and has been tested on Windows 10 and Ubuntu 17.10. The default TX antenna port is TX1_1.
 
 ```
 Usage: limegps [options]
