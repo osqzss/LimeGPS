@@ -6,7 +6,7 @@
 #include <lime/LimeSuite.h> // at C:\Program Files\PothosSDR\include
 #include <string.h>
 #include <time.h>
-#ifdef _WIN32
+#ifdef WIN32
 // To avoid conflict between time.h and pthread.h on Windows
 #define HAVE_STRUCT_TIMESPEC
 #endif

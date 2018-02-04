@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "limegps.h"
+#include <math.h>
 
 // for _getch used in Windows runtime.
 #ifdef WIN32
@@ -179,15 +180,20 @@ void usage(char *progname)
 		"  -T <date,time>   Overwrite TOC and TOE to scenario start time\n"
 		"  -d <duration>    Duration [sec] (max: %.0f)\n"
 		"  -a <rf_gain>     Normalized RF gain in [0.0 ... 1.0] (default: 0.1)\n"
+#ifdef WIN32
 		"  -i               Interactive mode: North='%c', South='%c', East='%c', West='%c'\n"
 #ifdef USE_GAMEPAD
 		"                   (Xbox gamepad: Turn Left=<, Turn Right=>, Forward=B)\n"
 #endif
+#endif
 		"  -I               Disable ionospheric delay for spacecraft scenario\n",
 		progname,
+#ifdef WIN32
 		((double)USER_MOTION_SIZE)/10.0, 
 		NORTH_KEY, SOUTH_KEY, EAST_KEY, WEST_KEY);
-
+#else
+		((double)USER_MOTION_SIZE)/10.0);
+#endif
 	return;
 }
 
@@ -393,10 +399,10 @@ int main(int argc, char *argv[])
 
 	// Select channel
 	int32_t channel = 0;
-	int channel_count = LMS_GetNumChannels(device, LMS_CH_TX);
+	//int channel_count = LMS_GetNumChannels(device, LMS_CH_TX);
 
 	// Select antenna
-	int32_t antenna = 1;
+	//int32_t antenna = 1;
 	int antenna_count = LMS_GetAntennaList(device, LMS_CH_TX, channel, NULL);
 	lms_name_t *antenna_name = malloc(sizeof(lms_name_t) * antenna_count);
 
@@ -500,7 +506,11 @@ int main(int argc, char *argv[])
 		printf("Creating TX task...\n");
 
 	// Running...
+#ifdef WIN32
 	printf("Running...\n" "Press 'q' to abort.\n");
+#else
+	printf("Running...\n" "Press Ctrl+C to abort.\n");
+#endif
 
 	// Wainting for TX task to complete.
 	pthread_join(s.tx.thread, NULL);

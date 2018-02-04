@@ -41,6 +41,23 @@ Follow the instructions at [Lime Suite wiki page](https://wiki.myriadrf.org/Lime
 
 After a successful build, you can find the executable in the __x64/Release__ folder.
 
+### Build on Linux (Ubuntu 17.10)
+
+1. Install LimeSuite and all the MyriadRF drivers.
+
+ ```
+$ sudo add-apt-repository -y ppa:myriadrf/drivers
+$ sudo apt-get update
+$ sudo apt-get install limesuite liblimesuite-dev limesuite-udev limesuite-images
+$ sudo apt-get install soapysdr soapysdr-module-lms7
+```
+
+2. Build LimeGPS.
+
+ ```
+$ make
+```
+
 ### License
 
 Copyright &copy; 2018 Takuji Ebinuma  

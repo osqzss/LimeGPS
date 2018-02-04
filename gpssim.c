@@ -4,22 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
 #include <time.h>
-#include <omp.h>
-#ifdef _WIN32
+
+#include "gpssim.h"
+#include "limegps.h"
+
+#ifdef WIN32
+#include <conio.h> // for interactive mode
 #include "getopt.h"
+#ifdef USE_GAMEPAD
+#include "libgamepad/GamePad.h"
+#endif
 #else
 #include <unistd.h>
 #endif
 
-#include "gpssim.h"
-#include "limegps.h"
-#include <conio.h> // for interactive mode
-
-#ifdef USE_GAMEPAD
-#include "libgamepad/GamePad.h"
-#endif
 
 int sinTable512[] = {
 	   2,   5,   8,  11,  14,  17,  20,  23,  26,  29,  32,  35,  38,  41,  44,  47,
@@ -145,7 +144,7 @@ void codegen(int *ca, int prn)
 		252, 254, 255, 256, 257, 258, 469, 470, 471, 472,
 		473, 474, 509, 512, 513, 514, 515, 516, 859, 860,
 		861, 862};
-	
+
 	int g1[CA_SEQ_LEN], g2[CA_SEQ_LEN];
 	int r1[N_DWRD_SBF], r2[N_DWRD_SBF];
 	int c1, c2;
@@ -164,7 +163,7 @@ void codegen(int *ca, int prn)
 		c1 = r1[2]*r1[9];
 		c2 = r2[1]*r2[2]*r2[5]*r2[7]*r2[8]*r2[9];
 
-		for (j=9; j>0; j--) 
+		for (j=9; j>0; j--)
 		{
 			r1[j] = r1[j-1];
 			r2[j] = r2[j-1];
@@ -175,7 +174,7 @@ void codegen(int *ca, int prn)
 
 	for (i=0,j=CA_SEQ_LEN-delay[prn-1]; i<CA_SEQ_LEN; i++,j++)
 		ca[i] = (1-g1[i]*g2[j%CA_SEQ_LEN])/2;
-	
+
 	return;
 }
 
@@ -202,7 +201,7 @@ void date2gps(const datetime_t *t, gpstime_t *g)
 
 	// Convert time to GPS weeks and seconds.
 	g->week = de / 7;
-	g->sec = (double)(de%7)*SECONDS_IN_DAY + t->hh*SECONDS_IN_HOUR 
+	g->sec = (double)(de%7)*SECONDS_IN_DAY + t->hh*SECONDS_IN_HOUR
 		+ t->mm*SECONDS_IN_MINUTE + t->sec;
 
 	return;
@@ -427,7 +426,7 @@ void satpos(ephem_t eph, gpstime_t g, double *pos, double *vel, double *clk)
 	mk = eph.m0 + eph.n*tk;
 	ek = mk;
 	ekold = ek + 1.0;
-  
+
 	OneMinusecosE = 0; // Suppress the uninitialized warning.
 	while(fabs(ek-ekold)>1.0E-14)
 	{
@@ -489,8 +488,8 @@ void satpos(ephem_t eph, gpstime_t g, double *pos, double *vel, double *clk)
 	else if(tk<-SECONDS_IN_HALF_WEEK)
 		tk += SECONDS_IN_WEEK;
 
-	clk[0] = eph.af0 + tk*(eph.af1 + tk*eph.af2) + relativistic - eph.tgd;  
-	clk[1] = eph.af1 + 2.0*tk*eph.af2; 
+	clk[0] = eph.af0 + tk*(eph.af1 + tk*eph.af2) + relativistic - eph.tgd;
+	clk[1] = eph.af1 + 2.0*tk*eph.af2;
 
 	return;
 }
@@ -640,7 +639,7 @@ void eph2sbf(const ephem_t eph, const ionoutc_t ionoutc, unsigned long sbf[5][N_
 		sbf[3][7] = ((A0&0xFFUL)<<22) | ((tot&0xFFUL)<<14) | ((wnt&0xFFUL)<<6);
 		sbf[3][8] = ((dtls&0xFFUL)<<22) | ((wnlsf&0xFFUL)<<14) | ((dn&0xFFUL)<<6);
 		sbf[3][9] = (dtlsf&0xFFUL)<<22;
-	
+
 	}
 	else
 	{
@@ -704,13 +703,13 @@ unsigned long computeChecksum(unsigned long source, int nib)
 	Bits 31 to 30 = 2 LSBs of the previous transmitted word, D29* and D30*
 	Bits 29 to  6 = Source data bits, d1, d2, ..., d24
 	Bits  5 to  0 = Empty parity bits
-	*/ 
+	*/
 
 	/*
 	Bits 31 to 30 = 2 LSBs of the previous transmitted word, D29* and D30*
 	Bits 29 to  6 = Data bits transmitted by the SV, D1, D2, ..., D24
 	Bits  5 to  0 = Computed parity bits, D25, D26, ..., D30
-	*/ 
+	*/
 
 	/*
 	                  1            2           3
@@ -724,7 +723,7 @@ unsigned long computeChecksum(unsigned long source, int nib)
 	D30    00 1011 0111 1010 1000 1001 1100 0000
 	*/
 
-	unsigned long bmask[6] = { 
+	unsigned long bmask[6] = {
 		0x3B1F3480UL, 0x1D8F9A40UL, 0x2EC7CD00UL,
 		0x1763E680UL, 0x2BB1F340UL, 0x0B7A89C0UL };
 
@@ -756,7 +755,7 @@ unsigned long computeChecksum(unsigned long source, int nib)
 	D |= ((D30 + countBits(bmask[3] & d)) % 2) << 2;
 	D |= ((D30 + countBits(bmask[4] & d)) % 2) << 1;
 	D |= ((D29 + countBits(bmask[5] & d)) % 2);
-	
+
 	D &= 0x3FFFFFFFUL;
 	//D |= (source & 0xC0000000UL); // Add D29* and D30* from source data bits
 
@@ -780,7 +779,7 @@ int replaceExpDesignator(char *str, int len)
 			str[i] = 'E';
 		}
 	}
-	
+
 	return(n);
 }
 
@@ -827,7 +826,7 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 {
 	FILE *fp;
 	int ieph;
-	
+
 	int sv;
 	char str[MAX_CHAR];
 	char tmp[20];
@@ -980,13 +979,13 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 		t.sec = atof(tmp);
 
 		date2gps(&t, &g);
-		
+
 		if (g0.week==-1)
 			g0 = g;
 
 		// Check current time of clock
 		dt = subGpsTime(g, g0);
-		
+
 		if (dt>SECONDS_IN_HOUR)
 		{
 			g0 = g;
@@ -1102,7 +1101,7 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 		tmp[19] = 0;
 		replaceExpDesignator(tmp, 19);
 		eph[ieph][sv].crc = atof(tmp);
-		
+
 		strncpy(tmp, str+41, 19);
 		tmp[19] = 0;
 		replaceExpDesignator(tmp, 19);
@@ -1156,7 +1155,7 @@ int readRinexNavAll(ephem_t eph[][MAX_SAT], ionoutc_t *ionoutc, const char *fnam
 	}
 
 	fclose(fp);
-	
+
 	if (g0.week>=0)
 		ieph += 1; // Number of sets of ephemerides
 
@@ -1188,7 +1187,7 @@ double ionosphericDelay(const ionoutc_t *ionoutc, gpstime_t g, double *llh, doub
 		// Earth's central angle between the user position and the earth projection of
 		// ionospheric intersection point (semi-circles)
 		psi = 0.0137/(E + 0.11) - 0.022;
-		
+
 		// Geodetic latitude of the earth projection of the ionospheric intersection point
 		// (semi-circles)
 		phi_i = phi_u + psi*cos(azel[0]);
@@ -1315,7 +1314,7 @@ void computeCodePhase(channel_t *chan, range_t rho1, double dt)
 	double ms;
 	int ims;
 	double rhorate;
-	
+
 	// Pseudorange rate.
 	rhorate = (rho1.range - chan->rho0.range)/dt;
 
@@ -1331,7 +1330,7 @@ void computeCodePhase(channel_t *chan, range_t rho1, double dt)
 
 	chan->iword = ims/600; // 1 word = 30 bits = 600 ms
 	ims -= chan->iword*600;
-			
+
 	chan->ibit = ims/20; // 1 bit = 20 code = 20 ms
 	ims -= chan->ibit*20;
 
@@ -1404,11 +1403,11 @@ int readNmeaGGA(double **xyz, const char *filename)
 		if (strncmp(token+3, "GGA", 3)==0)
 		{
 			token = strtok(NULL, ","); // Date and time
-			
+
 			token = strtok(NULL, ","); // Latitude
 			strncpy(tmp, token, 2);
 			tmp[2] = 0;
-			
+
 			llh[0] = atof(tmp) + atof(token+2)/60.0;
 
 			token = strtok(NULL, ","); // North or south
@@ -1416,11 +1415,11 @@ int readNmeaGGA(double **xyz, const char *filename)
 				llh[0] *= -1.0;
 
 			llh[0] /= R2D; // in radian
-			
+
 			token = strtok(NULL, ","); // Longitude
 			strncpy(tmp, token, 3);
 			tmp[3] = 0;
-			
+
 			llh[1] = atof(tmp) + atof(token+3)/60.0;
 
 			token = strtok(NULL, ","); // East or west
@@ -1434,13 +1433,13 @@ int readNmeaGGA(double **xyz, const char *filename)
 			token = strtok(NULL, ","); // HDOP
 
 			token = strtok(NULL, ","); // Altitude above meas sea level
-			
+
 			llh[2] = atof(token);
 
 			token = strtok(NULL, ","); // in meter
 
 			token = strtok(NULL, ","); // Geoid height above WGS84 ellipsoid
-			
+
 			llh[2] += atof(token);
 
 			// Convert geodetic position into ECEF coordinates
@@ -1449,7 +1448,7 @@ int readNmeaGGA(double **xyz, const char *filename)
 			xyz[numd][0] = pos[0];
 			xyz[numd][1] = pos[1];
 			xyz[numd][2] = pos[2];
-			
+
 			// Update the number of track points
 			numd++;
 
@@ -1651,9 +1650,9 @@ void *gps_task(void *arg)
 	int neph,ieph;
 	ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
 	gpstime_t g0;
-	
+
 	double llh[3];
-	
+
 	int i,j;
 	channel_t chan[MAX_CHAN];
 	double elvmask = 0.0; // in degree
@@ -1677,7 +1676,6 @@ void *gps_task(void *arg)
 	char navfile[MAX_CHAR];
 
 	int iq_buff_size;
-	int data_format;
 
 	int gain[MAX_CHAN];
 	double path_loss;
@@ -1695,17 +1693,19 @@ void *gps_task(void *arg)
 	int verb;
 
 	int timeoverwrite = FALSE; // Overwirte the TOC and TOE in the RINEX file
-	
+
 	ionoutc_t ionoutc;
 
 	int interactive = FALSE;
+#ifdef WIN32
 	int key;
 	int button; // for gamepad
 	double velocity = 0.0;
-	double heading = 0.0; 
-	double tmat[3][3];
+	double heading = 0.0;
 	double neu[3];
-	
+#endif
+	double tmat[3][3];
+
 
 	////////////////////////////////////////////////////////////
 	// Read options
@@ -1713,13 +1713,12 @@ void *gps_task(void *arg)
 
 	strcpy(navfile, s->opt.navfile);
 	strcpy(umfile, s->opt.umfile);
-	data_format = SC16;
-	
+
 	staticLocationMode = s->opt.staticLocationMode;
 	llh[0] = s->opt.llh[0];
 	llh[1] = s->opt.llh[1];
 	llh[2] = s->opt.llh[2];
-	
+
 	g0.week = s->opt.g0.week;
 	g0.sec = s->opt.g0.sec;
 	gps2date(&g0, &t0);
@@ -1734,7 +1733,7 @@ void *gps_task(void *arg)
 	delt = 1.0/(double)TX_SAMPLERATE;
 
 	interactive = s->opt.interactive;
-	
+
 	timeoverwrite = s->opt.timeoverwrite;
 
 	ionoutc.enable = s->opt.iono_enable;
@@ -1745,7 +1744,7 @@ void *gps_task(void *arg)
 
 	// Allocate user motion array
 	xyz = (double **)malloc(USER_MOTION_SIZE * sizeof(double**));
-	
+
 	if (xyz==NULL)
 	{
 		printf("ERROR: Faild to allocate user motion array.\n");
@@ -1755,7 +1754,7 @@ void *gps_task(void *arg)
 	for (i=0; i<USER_MOTION_SIZE; i++)
 	{
 		xyz[i] = (double *)malloc(3 * sizeof(double));
-		
+
 		if (xyz[i]==NULL)
 		{
 			for (j=i-1; j>=0; j--)
@@ -1790,16 +1789,16 @@ void *gps_task(void *arg)
 		// Set simulation duration
 		if (numd>iduration)
 			numd = iduration;
-	} 
-	else 
+	}
+	else
 	{
 		// Static geodetic coordinates input mode: "-l"
-		// Added by scateu@gmail.com 
+		// Added by scateu@gmail.com
 		printf("Using static location mode.\n");
 		llh2xyz(llh,xyz[0]); // Convert llh to xyz
 
 		numd = iduration;
-		
+
 		for (iumd=1; iumd<numd; iumd++)
 		{
 			xyz[iumd][0] = xyz[0][0];
@@ -1845,16 +1844,19 @@ void *gps_task(void *arg)
 
 	if (ionoutc.vflg==TRUE)
 	{
-		printf("  %12.3e %12.3e %12.3e %12.3e\n", 
+		printf("  %12.3e %12.3e %12.3e %12.3e\n",
 			ionoutc.alpha0, ionoutc.alpha1, ionoutc.alpha2, ionoutc.alpha3);
-		printf("  %12.3e %12.3e %12.3e %12.3e\n", 
+		printf("  %12.3e %12.3e %12.3e %12.3e\n",
 			ionoutc.beta0, ionoutc.beta1, ionoutc.beta2, ionoutc.beta3);
 		printf("   %19.11e %19.11e  %9d %9d\n",
 			ionoutc.A0, ionoutc.A1, ionoutc.tot, ionoutc.wnt);
 		printf("%6d\n", ionoutc.dtls);
 	}
 
-	for (sv=0; sv<MAX_SAT; sv++) 
+	gmin.sec = 0.0;
+	gmax.sec = 0.0;
+	
+	for (sv=0; sv<MAX_SAT; sv++)
 	{
 		if (eph[0][sv].vflg==1)
 		{
@@ -1914,10 +1916,10 @@ void *gps_task(void *arg)
 			if (subGpsTime(g0, gmin)<0.0 || subGpsTime(gmax, g0)<0.0)
 			{
 				printf("ERROR: Invalid start time.\n");
-				printf("tmin = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n", 
+				printf("tmin = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
 					tmin.y, tmin.m, tmin.d, tmin.hh, tmin.mm, tmin.sec,
 					gmin.week, gmin.sec);
-				printf("tmax = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n", 
+				printf("tmax = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
 					tmax.y, tmax.m, tmax.d, tmax.hh, tmax.mm, tmax.sec,
 					gmax.week, gmax.sec);
 
@@ -1931,7 +1933,7 @@ void *gps_task(void *arg)
 		t0 = tmin;
 	}
 
-	printf("Start time = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n", 
+	printf("Start time = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
 		t0.y, t0.m, t0.d, t0.hh, t0.mm, t0.sec, g0.week, g0.sec);
 	printf("Duration = %.1f [sec]\n", ((double)numd)/10.0);
 
@@ -1997,7 +1999,7 @@ void *gps_task(void *arg)
 	for(i=0; i<MAX_CHAN; i++)
 	{
 		if (chan[i].prn>0)
-			printf("%02d %6.1f %5.1f %11.1f %5.1f\n", chan[i].prn, 
+			printf("%02d %6.1f %5.1f %11.1f %5.1f\n", chan[i].prn,
 				chan[i].azel[0]*R2D, chan[i].azel[1]*R2D, chan[i].rho0.d, chan[i].rho0.iono_delay);
 	}
 
@@ -2017,6 +2019,7 @@ void *gps_task(void *arg)
 
 	for (iumd=1; iumd<numd; iumd++)
 	{
+#ifdef WIN32
 		key = 0; // Initialize key input
 
 		// Press 'q' to abort
@@ -2115,7 +2118,7 @@ void *gps_task(void *arg)
 				xyz[iumd][2] += tmat[0][2]*neu[0] + tmat[1][2]*neu[1] + tmat[2][2]*neu[2];
 			}
 		} // End of interactive mode
-
+#endif
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)
@@ -2171,12 +2174,12 @@ void *gps_task(void *arg)
 						chan[i].code_phase -= CA_SEQ_LEN;
 
 						chan[i].icode++;
-					
+
 						if (chan[i].icode>=20) // 20 C/A codes = 1 navigation data bit
 						{
 							chan[i].icode = 0;
 							chan[i].ibit++;
-						
+
 							if (chan[i].ibit>=30) // 30 navigation data bits = 1 word
 							{
 								chan[i].ibit = 0;
@@ -2263,11 +2266,11 @@ void *gps_task(void *arg)
 						for (i=0; i<MAX_CHAN; i++)
 						{
 							// Generate new subframes if allocated
-							if (chan[i].prn!=0) 
+							if (chan[i].prn!=0)
 								eph2sbf(eph[ieph][chan[i].prn-1], ionoutc, chan[i].sbf);
 						}
 					}
-						
+
 					break;
 				}
 			}
@@ -2280,7 +2283,7 @@ void *gps_task(void *arg)
 			{
 				printf("\n");
 				gps2date(&grx, &t0);
-				printf("%4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n", 
+				printf("%4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
 					t0.y, t0.m, t0.d, t0.hh, t0.mm, t0.sec, grx.week, grx.sec);
 				printf("xyz = %11.1f, %11.1f, %11.1f\n", xyz[iumd][0], xyz[iumd][1], xyz[iumd][2]);
 				xyz2llh(xyz[iumd],llh);
@@ -2301,8 +2304,9 @@ void *gps_task(void *arg)
 		printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
 		fflush(stdout);
 	}
-
+#ifdef WIN32
 abort:
+#endif
 	// Done!
 	s->finished = true;
 
