@@ -64,7 +64,6 @@ $ make
 
  ```
 $ ./LimeGPS -e brdc0350.18n
-
 ```
 
 ### License
