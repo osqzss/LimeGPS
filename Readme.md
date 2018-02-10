@@ -52,10 +52,19 @@ $ sudo apt-get install limesuite liblimesuite-dev limesuite-udev limesuite-image
 $ sudo apt-get install soapysdr soapysdr-module-lms7
 ```
 
-2. Build LimeGPS.
+2. Clone and build LimeGPS.
 
  ```
+$ git clone https://github.com/osqzss/LimeGPS
+$ cd LimeGPS
 $ make
+```
+
+3. Test the simulator.
+
+ ```
+$ ./LimeGPS -e brdc0350.18n
+
 ```
 
 ### License
