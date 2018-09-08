@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 	if (getSampleRateRange)
 		printf("Warning: Failed to get sample rate range: %s\n", LMS_GetLastErrorMessage());
 
-	int setSampleRate = LMS_SetSampleRate(device, (double)TX_SAMPLERATE, 0);
+	int setSampleRate = LMS_SetSampleRate(device, (double)TX_SAMPLERATE, 1); // for LimeSDR mini
 	if (setSampleRate)
 	{
 		printf("ERROR: Failed to set sample rate: %s\n", LMS_GetLastErrorMessage());
