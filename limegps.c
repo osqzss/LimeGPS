@@ -383,6 +383,33 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	const lms_dev_info_t *devinfo =  LMS_GetDeviceInfo(device);
+
+	if (devinfo == NULL)
+	{
+		printf("ERROR: Failed to read device info: %s\n", LMS_GetLastErrorMessage());
+		goto out;
+	}
+
+    printf("deviceName: %s\n", devinfo->deviceName);
+    printf("expansionName: %s\n", devinfo->expansionName);
+    printf("firmwareVersion: %s\n", devinfo->firmwareVersion);
+    printf("hardwareVersion: %s\n", devinfo->hardwareVersion);
+    printf("protocolVersion: %s\n", devinfo->protocolVersion);
+    printf("gatewareVersion: %s\n", devinfo->gatewareVersion);
+    printf("gatewareTargetBoard: %s\n", devinfo->gatewareTargetBoard);
+
+    int limeOversample = 1;
+    if(strncmp(devinfo->deviceName, "LimeSDR-USB", 11) == 0)
+    {
+        limeOversample = 0;    // LimeSDR-USB works best with default oversampling
+        printf("Found a LimeSDR-USB\n");
+    }
+    else
+    {
+        printf("Found a LimeSDR-Mini\n");
+    }
+
 	int lmsReset = LMS_Reset(device);
 	if (lmsReset)
 	{
@@ -439,7 +466,8 @@ int main(int argc, char *argv[])
 	if (getSampleRateRange)
 		printf("Warning: Failed to get sample rate range: %s\n", LMS_GetLastErrorMessage());
 
-	int setSampleRate = LMS_SetSampleRate(device, (double)TX_SAMPLERATE, 1); // for LimeSDR mini
+	int setSampleRate = LMS_SetSampleRate(device, (double)TX_SAMPLERATE, limeOversample); 
+
 	if (setSampleRate)
 	{
 		printf("ERROR: Failed to set sample rate: %s\n", LMS_GetLastErrorMessage());

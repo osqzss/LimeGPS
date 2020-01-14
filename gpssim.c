@@ -1933,6 +1933,13 @@ void *gps_task(void *arg)
 		t0 = tmin;
 	}
 
+	printf("tmin = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
+		tmin.y, tmin.m, tmin.d, tmin.hh, tmin.mm, tmin.sec,
+		gmin.week, gmin.sec);
+	printf("tmax = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
+		tmax.y, tmax.m, tmax.d, tmax.hh, tmax.mm, tmax.sec,
+		gmax.week, gmax.sec);
+
 	printf("Start time = %4d/%02d/%02d,%02d:%02d:%02.0f (%d:%.0f)\n",
 		t0.y, t0.m, t0.d, t0.hh, t0.mm, t0.sec, g0.week, g0.sec);
 	printf("Duration = %.1f [sec]\n", ((double)numd)/10.0);
