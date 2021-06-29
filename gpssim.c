@@ -6,6 +6,10 @@
 #include <math.h>
 #include <time.h>
 
+  
+#define PORT     54251
+#define MAXLINE 1024
+
 #include "gpssim.h"
 #include "limegps.h"
 
@@ -1697,6 +1701,8 @@ void *gps_task(void *arg)
 	ionoutc_t ionoutc;
 
 	int interactive = FALSE;
+    
+	int realTime = FALSE;
 #ifdef WIN32
 	int key;
 	int button; // for gamepad
@@ -1734,9 +1740,13 @@ void *gps_task(void *arg)
 
 	interactive = s->opt.interactive;
 
+    realTime = s->opt.realTime;
+
 	timeoverwrite = s->opt.timeoverwrite;
 
 	ionoutc.enable = s->opt.iono_enable;
+
+    //SOCKET
 
 	////////////////////////////////////////////////////////////
 	// Receiver position
@@ -1765,7 +1775,7 @@ void *gps_task(void *arg)
 		}
 	}
 
-	if (!staticLocationMode)
+	if (!staticLocationMode && !realTime)
 	{
 		// Read user motion file
 		if (nmeaGGA==TRUE)
@@ -2126,6 +2136,50 @@ void *gps_task(void *arg)
 			}
 		} // End of interactive mode
 #endif
+        //Realtime Mode
+        if(realTime)
+        {
+            
+            char buffer[MAXLINE];
+            int len, n;
+
+            len = sizeof(s->opt.cliaddr);  //len is value/resuslt
+
+            n = recvfrom(s->opt.sockfd, (char *)buffer, MAXLINE, 
+                        MSG_WAITALL, ( struct sockaddr *) &s->opt.cliaddr,
+                        (socklen_t*)&len);
+            buffer[n] = '\0';
+
+            static double templlh[3], tempxyz[3];
+
+            if(n > 0){
+                printf("Client : %s\n", buffer);
+
+                char* chars_array = strtok(buffer, ";");
+                for(int i = 0; i < 3; i++)
+                {   
+                    printf("%s \n",chars_array);
+                    templlh[i] = atof(chars_array);
+                    chars_array = strtok(NULL, ";");
+                }
+
+                templlh[0] = 58;
+                templlh[1] = 12;
+                templlh[2] = 100;
+
+			    // Convert geodetic position into ECEF coordinates
+                llh2xyz(templlh, tempxyz);
+
+                printf("%s, %s, %s", tempxyz[0],tempxyz[1],tempxyz[2]);
+
+                //Set simulated positions
+                xyz[iumd][0] = tempxyz[0];
+                xyz[iumd][1] = tempxyz[1];
+                xyz[iumd][2] = tempxyz[2];
+
+            }
+        }
+
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)
