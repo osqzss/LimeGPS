@@ -76,9 +76,9 @@ typedef struct {
 	int timeoverwrite;
 	int iono_enable;
 
-    struct sockaddr_in servaddr;
-    struct sockaddr_in cliaddr;
-    int sockfd;
+    volatile struct sockaddr_in servaddr;
+    volatile struct sockaddr_in cliaddr;
+    volatile int sockfd;
 } option_t;
 
 typedef struct {
