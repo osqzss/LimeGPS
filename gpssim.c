@@ -2161,12 +2161,12 @@ void *gps_task(void *arg)
 
             if(n > 0){
 
-                printf("Client : %s\n", buffer);
+                //printf("Client : %s\n", buffer);
 
                 char* chars_array = strtok(buffer, ";");
                 for(int i = 0; i < 3; i++)
                 {   
-                    printf("%s \n",chars_array);
+                    //printf("%s \n",chars_array);
                     tempxyz[i] = atof(chars_array);
                     chars_array = strtok(NULL, ";");
                 }
@@ -2324,7 +2324,7 @@ void *gps_task(void *arg)
 
 		igrx = (int)(grx.sec*10.0+0.5);
 
-		if (igrx%300==0) // Every 30 seconds
+		if (igrx%50==0) // Every 30 seconds
 		{
 			// Update navigation message
 			for (i=0; i<MAX_CHAN; i++)
