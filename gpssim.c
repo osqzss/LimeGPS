@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <errno.h>
 
 #include "gpssim.h"
 #include "limegps.h"
@@ -1672,6 +1673,7 @@ void *gps_task(void *arg)
 
 	int staticLocationMode = FALSE;
 	int nmeaGGA = FALSE;
+	int realtimeMode = FALSE;
 
 	char navfile[MAX_CHAR];
 
@@ -1724,6 +1726,7 @@ void *gps_task(void *arg)
 	gps2date(&g0, &t0);
 
 	nmeaGGA = s->opt.nmeaGGA;
+	realtimeMode = s->opt.realTime;
 
 	iduration = s->opt.iduration;
 	verb = s->opt.verb;
@@ -1769,7 +1772,14 @@ void *gps_task(void *arg)
 	{
 		// Read user motion file
 		if (nmeaGGA==TRUE)
+		{
 			numd = readNmeaGGA(xyz, umfile);
+		}
+		else if(realtimeMode==TRUE)
+		{
+			numd = iduration;
+			llh2xyz(llh,xyz[0]); // Convert llh to xyz
+		}
 		else
 		{
 			numd = readUserMotion(xyz, umfile);
@@ -2126,6 +2136,57 @@ void *gps_task(void *arg)
 			}
 		} // End of interactive mode
 #endif
+
+		//Run with -r to activate
+		if(realtimeMode)
+		{
+			char buffer[MAXLINE];
+            int len, n;
+
+            len = sizeof(s->opt.cliaddr);
+
+			//Read UDP message
+            n = recvfrom(s->opt.sockfd, (char *)buffer, MAXLINE, 
+                        MSG_WAITALL, ( struct sockaddr *) &s->opt.cliaddr,
+                        (socklen_t*)&len);
+            buffer[n] = '\0';
+
+            double tempxyz[3];
+
+            if(n > 0){
+
+				//Parse message by separating by ;
+                char* chars_array = strtok(buffer, ";");
+                for(int i = 0; i < 3; i++)
+                {   
+                    tempxyz[i] = atof(chars_array);
+                    chars_array = strtok(NULL, ";");
+                }
+
+				int tempX = tempxyz[0];
+				int tempY = tempxyz[1];
+				int tempZ = tempxyz[2];
+
+				xyz[iumd][0] = tempX;
+				xyz[iumd][1] = tempY;
+				xyz[iumd][2] = tempZ;
+
+
+            }
+			else if(n<0 && errno != EAGAIN && errno != EWOULDBLOCK)
+			{
+				perror("recvfrom");
+
+			}
+			else{ //If nothing moved (Required)
+
+				xyz[iumd][0] = xyz[iumd-1][0];
+				xyz[iumd][1] = xyz[iumd-1][1];
+				xyz[iumd][2] = xyz[iumd-1][2];
+			}
+			
+		}
+
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)

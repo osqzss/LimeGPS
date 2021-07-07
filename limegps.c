@@ -3,6 +3,16 @@
 #include "limegps.h"
 #include <math.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+
 // for _getch used in Windows runtime.
 #ifdef WIN32
 #include <conio.h>
@@ -175,6 +185,7 @@ void usage(char *progname)
 		"  -e <gps_nav>     RINEX navigation file for GPS ephemerides (required)\n"
 		"  -u <user_motion> User motion file (dynamic mode)\n"
 		"  -g <nmea_gga>    NMEA GGA stream (dynamic mode)\n"
+		"  -r <realtime>    Realtime (dynamic mode)\n"
 		"  -l <location>    Lat,Lon,Hgt (static mode) e.g. 35.274,137.014,100\n"
 		"  -t <date,time>   Scenario start time YYYY/MM/DD,hh:mm:ss\n"
 		"  -T <date,time>   Overwrite TOC and TOE to scenario start time\n"
@@ -216,6 +227,7 @@ int main(int argc, char *argv[])
 	s.opt.iduration = USER_MOTION_SIZE;
 	s.opt.verb = TRUE;
 	s.opt.nmeaGGA = FALSE;
+	s.opt.realTime = FALSE;
 	s.opt.staticLocationMode = TRUE;
 	//s.opt.llh[0] = 35.6811673 / R2D;
 	//s.opt.llh[1] = 139.7648576 / R2D;
@@ -232,7 +244,7 @@ int main(int argc, char *argv[])
 	datetime_t t0;
 	double gain = 0.1;
 
-	while ((result=getopt(argc,argv,"e:u:g:l:T:t:d:a:iI"))!=-1)
+	while ((result=getopt(argc,argv,"e:u:g:r:l:T:t:d:a:iI"))!=-1)
 	{
 		switch (result)
 		{
@@ -249,6 +261,14 @@ int main(int argc, char *argv[])
 			s.opt.nmeaGGA = TRUE;
 			s.opt.staticLocationMode = FALSE;
 			break;
+		case 'r':
+			printf("Realtime activated\n");
+			strcpy(s.opt.umfile, optarg);
+			s.opt.nmeaGGA = FALSE;
+			s.opt.realTime = TRUE;
+			s.opt.staticLocationMode = FALSE;
+			break;
+
 		case 'l':
 			// Static geodetic coordinates input mode
 			// Added by scateu@gmail.com
@@ -320,6 +340,42 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
+
+    int sockfd;
+    struct sockaddr_in servaddr, cliaddr;
+
+    // Creating socket file descriptor
+    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    memset(&cliaddr, 0, sizeof(cliaddr));
+
+    // Filling server information
+    servaddr.sin_family    = AF_INET; // IPv4
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_port = htons(PORT);
+
+    // Bind the socket with the server address
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr, 
+            sizeof(servaddr)) < 0 )
+    {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        printf("Bind successful \n");
+    }
+
+    s.opt.servaddr = servaddr;
+    s.opt.cliaddr = servaddr;
+    s.opt.sockfd = sockfd;
 
 	if (s.opt.navfile[0]==0)
 	{

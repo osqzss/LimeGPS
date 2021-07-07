@@ -13,6 +13,14 @@
 #include <pthread.h> // at C:\Program Files\PothosSDR\include
 #include "gpssim.h"
 
+
+// Server side implementation of UDP client-server model
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #define TX_FREQUENCY    1575420000
 #define TX_SAMPLERATE   2500000
 #define TX_BANDWIDTH    5000000
@@ -24,6 +32,10 @@
 
 #define NUM_IQ_SAMPLES  (TX_SAMPLERATE / 10)
 #define FIFO_LENGTH     (NUM_IQ_SAMPLES * 2)
+
+//SOCKET
+#define PORT 54251
+#define MAXLINE 1024
 
 // Interactive mode directions
 #define UNDEF 0
@@ -46,6 +58,10 @@
 // Activate gamepad support
 //#define USE_GAMEPAD
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 typedef struct {
 	char navfile[MAX_CHAR];
 	char umfile[MAX_CHAR];
@@ -56,8 +72,13 @@ typedef struct {
 	gpstime_t g0;
 	double llh[3];
 	int interactive;
+    int realTime;
 	int timeoverwrite;
 	int iono_enable;
+
+    volatile struct sockaddr_in servaddr;
+    volatile struct sockaddr_in cliaddr;
+    volatile int sockfd;
 } option_t;
 
 typedef struct {
@@ -96,7 +117,13 @@ typedef struct {
 	double time;
 } sim_t;
 
+
+int ext_startLimeGPS();
 extern void *gps_task(void *arg);
 extern int is_fifo_write_ready(sim_t *s);
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif
