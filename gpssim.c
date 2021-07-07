@@ -2138,35 +2138,28 @@ void *gps_task(void *arg)
 		} // End of interactive mode
 #endif
 
+		//Run with -r to activate
 		if(realtimeMode)
 		{
-
-			
 			char buffer[MAXLINE];
             int len, n;
 
-            len = sizeof(s->opt.cliaddr);  //len is value/resuslt
+            len = sizeof(s->opt.cliaddr);
 
-            //printf("A: %d \n",s->opt.cliaddr.sin_addr.s_addr);
-			//printf("B: %d \n", s->opt.sockfd);
-
-
+			//Read UDP message
             n = recvfrom(s->opt.sockfd, (char *)buffer, MAXLINE, 
                         MSG_WAITALL, ( struct sockaddr *) &s->opt.cliaddr,
                         (socklen_t*)&len);
             buffer[n] = '\0';
 
             double tempxyz[3];
-			//printf("C: %d \n", n);
 
             if(n > 0){
 
-                //printf("Client : %s\n", buffer);
-
+				//Parse message by separating by ;
                 char* chars_array = strtok(buffer, ";");
                 for(int i = 0; i < 3; i++)
                 {   
-                    //printf("%s \n",chars_array);
                     tempxyz[i] = atof(chars_array);
                     chars_array = strtok(NULL, ";");
                 }
@@ -2178,9 +2171,6 @@ void *gps_task(void *arg)
 				xyz[iumd][0] = tempX;
 				xyz[iumd][1] = tempY;
 				xyz[iumd][2] = tempZ;
-				//printf("%d",xyz[iumd][0]);
-				//printf("%d",xyz[iumd][1]);
-				//printf("%d",xyz[iumd][2]);
 
 
             }
@@ -2189,9 +2179,7 @@ void *gps_task(void *arg)
 				perror("recvfrom");
 
 			}
-			else{
-				//int tempX = xyz[iumd-1][0];
-				//tempX+= 1;
+			else{ //If nothing moved (Required)
 
 				xyz[iumd][0] = xyz[iumd-1][0];
 				xyz[iumd][1] = xyz[iumd-1][1];
@@ -2324,7 +2312,7 @@ void *gps_task(void *arg)
 
 		igrx = (int)(grx.sec*10.0+0.5);
 
-		if (igrx%50==0) // Every 30 seconds
+		if (igrx%300==0) // Every 30 seconds
 		{
 			// Update navigation message
 			for (i=0; i<MAX_CHAN; i++)
