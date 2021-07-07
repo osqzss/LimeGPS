@@ -1359,7 +1359,6 @@ int readUserMotion(double **xyz, const char *filename)
 	int numd;
 	char str[MAX_CHAR];
 	double t,x,y,z;
-	printf("reading user motion file: %s",filename);
 
 	if (NULL==(fp=fopen(filename,"rt")))
 		return(-1);
