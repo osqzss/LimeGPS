@@ -2158,18 +2158,14 @@ void *gps_task(void *arg)
 				//Parse message by separating by ;
                 char* chars_array = strtok(buffer, ";");
                 for(int i = 0; i < 3; i++)
-                {   
+				{
                     tempxyz[i] = atof(chars_array);
-                    chars_array = strtok(NULL, ";");
+					chars_array = strtok(NULL, ";");
                 }
 
-				int tempX = tempxyz[0];
-				int tempY = tempxyz[1];
-				int tempZ = tempxyz[2];
-
-				xyz[iumd][0] = tempX;
-				xyz[iumd][1] = tempY;
-				xyz[iumd][2] = tempZ;
+				xyz[iumd][0] = tempxyz[0];
+				xyz[iumd][1] = tempxyz[1];;
+				xyz[iumd][2] = tempxyz[2];;
 
 
             }
