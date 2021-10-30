@@ -240,8 +240,8 @@ void xyz2llh(const double *xyz, double *llh)
 	double x,y,z;
 	double rho2,dz,zdz,nh,slat,n,dz_new;
 
-	a = WGS84_RADIUS;
-	e = WGS84_ECCENTRICITY;
+	a = GRS80_RADIUS;
+	e = GRS80_ECCENTRICITY;
 
 	eps = 1.0e-3;
 	e2 = e*e;
