@@ -17,6 +17,16 @@ Options:
   -i               Interactive mode: North='w', South='s', East='d', West='a'
   -I               Disable ionospheric delay for spacecraft scenario
 ```
+### Restrictions optional
+
+If compiled with 'USE_RESTRICTIONS' defined, there are two more options:
+```
+  -R <elevation_min,azimuth_start,azimuth_start> Sky area restriction
+  -N <n_SV_max>      Maximum active SV restriction
+```
+Theses options allow to simulate not ideal receptions conditions:
+ - elevation_min:  Simulation of obstacles hiding the sky below a certain elevation
+ - azimuth_start,azimuth_start:  Simulation of obstacles hiding most of the sky, except the one between the minimum and maximum azimuth angle
 
 ### Build on Windows with Visual Studio
 

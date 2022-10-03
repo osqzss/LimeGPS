@@ -2,6 +2,10 @@
 
 #include "limegps.h"
 #include <math.h>
+#ifdef USE_RESTRICTIONS
+	#include "gpssim.h"
+#endif /* USE_RESTRICTIONS */
+
 
 // for _getch used in Windows runtime.
 #ifdef WIN32
@@ -186,6 +190,11 @@ void usage(char *progname)
 		"                   (Xbox gamepad: Turn Left=<, Turn Right=>, Forward=B)\n"
 #endif
 #endif
+
+#ifdef USE_RESTRICTIONS
+		"  -R <elevation_min,azimuth_start,azimuth_start> Sky area restriction\n"
+		"  -N <n_SV_max>      Maximum active SV restriction\n"
+#endif /* USE_RESTRICTIONS */
 		"  -I               Disable ionospheric delay for spacecraft scenario\n",
 		progname,
 #ifdef WIN32
@@ -225,14 +234,23 @@ int main(int argc, char *argv[])
 	s.opt.interactive = FALSE;
 	s.opt.timeoverwrite = FALSE;
 	s.opt.iono_enable = TRUE;
-
+#ifdef USE_RESTRICTIONS
+	s.opt.restrictions.elevation_mini_deg = 0;
+	s.opt.restrictions.azimuth_start_deg  = 0;
+	s.opt.restrictions.azimuth_stop_deg   = 360;
+	s.opt.restrictions.max_enabled_SV     = MAX_CHAN;
+#endif /* USE_RESTRICTIONS */
 	// Options
 	int result;
 	double duration;
 	datetime_t t0;
 	double gain = 0.1;
 
+#ifdef USE_RESTRICTIONS
+	while ((result=getopt(argc,argv,"e:u:g:l:T:t:d:a:R:N:iI"))!=-1)
+#else
 	while ((result=getopt(argc,argv,"e:u:g:l:T:t:d:a:iI"))!=-1)
+#endif /* USE_RESTRICTIONS */
 	{
 		switch (result)
 		{
@@ -312,6 +330,23 @@ int main(int argc, char *argv[])
 		case 'I':
 			s.opt.iono_enable = FALSE; // Disable ionospheric correction
 			break;
+	#ifdef USE_RESTRICTIONS
+		case 'N':
+			s.opt.restrictions.max_enabled_SV = atoi(optarg);
+			printf("Maximum enabled SV: %d\n",s.opt.restrictions.max_enabled_SV );
+			break;
+		case 'R':
+			sscanf(optarg, "%f,%f,%f",
+				&(s.opt.restrictions.elevation_mini_deg),
+				&(s.opt.restrictions.azimuth_start_deg),
+				&(s.opt.restrictions.azimuth_stop_deg)
+			);
+			printf("Sky area restrictions:\n");
+			printf(" - Minimum elevation: %f\n",s.opt.restrictions.elevation_mini_deg);
+			printf(" - Start azimuth: %f\n",s.opt.restrictions.azimuth_start_deg);
+			printf(" - Stop  azimuth: %f\n",s.opt.restrictions.azimuth_stop_deg);
+			break;
+	#endif /* USE_RESTRICTIONS */
 		case ':':
 		case '?':
 			usage(argv[0]);

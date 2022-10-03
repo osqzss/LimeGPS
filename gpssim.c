@@ -1646,6 +1646,11 @@ void *gps_task(void *arg)
 {
 	sim_t *s = (sim_t *)arg;
 
+#ifdef USE_RESTRICTIONS
+	int sv_in_use_cntr;
+	int sv_in_availble_cntr;
+#endif /*USE_RESTRICTIONS*/
+
 	int sv;
 	int neph,ieph;
 	ephem_t eph[EPHEM_ARRAY_SIZE][MAX_SAT];
@@ -1705,7 +1710,18 @@ void *gps_task(void *arg)
 	double neu[3];
 #endif
 	double tmat[3][3];
+#ifdef USE_RESTRICTIONS
+	float restrictions_param_elevation_mini_deg = s->opt.restrictions.elevation_mini_deg;
+	float restrictions_param_azimuth_start_deg  = s->opt.restrictions.azimuth_start_deg;
+	float restrictions_param_azimuth_stop_deg   = s->opt.restrictions.azimuth_stop_deg;
+	int   restrictions_param_max_enabled_SV     = s->opt.restrictions.max_enabled_SV;
 
+	printf("Sky area restrictions:\n");
+	printf(" - Minimum elevation: %f\n",restrictions_param_elevation_mini_deg);
+	printf(" - Start azimuth: %f\n",restrictions_param_azimuth_start_deg);
+	printf(" - Sopt  azimuth: %f\n",restrictions_param_azimuth_stop_deg);
+	printf("Maximum enabled SV: %d\n",restrictions_param_max_enabled_SV );
+#endif /* USE_RESTRICTIONS */
 
 	////////////////////////////////////////////////////////////
 	// Read options
@@ -2126,10 +2142,18 @@ void *gps_task(void *arg)
 			}
 		} // End of interactive mode
 #endif
+#ifdef USE_RESTRICTIONS
+		sv_in_use_cntr = 0;
+		sv_in_availble_cntr = 0;
+#endif /* USE_RESTRICTIONS*/
+
 		for (i=0; i<MAX_CHAN; i++)
 		{
 			if (chan[i].prn>0)
 			{
+#ifdef USE_RESTRICTIONS
+		sv_in_availble_cntr++;
+#endif /*USE_RESTRICTIONS*/
 				// Refresh code phase and data bit counters
 				range_t rho;
 				sv = chan[i].prn-1;
@@ -2151,7 +2175,20 @@ void *gps_task(void *arg)
 				ant_gain = ant_pat[ibs];
 
 				// Signal gain
+		#ifdef USE_RESTRICTIONS
+				if(  ( chan[i].azel[1]*R2D > restrictions_param_elevation_mini_deg ) && ( chan[i].azel[0]*R2D >= restrictions_param_azimuth_start_deg ) && ( chan[i].azel[0]*R2D <= restrictions_param_azimuth_stop_deg) ) {
+					if( sv_in_use_cntr < restrictions_param_max_enabled_SV ) {
+						sv_in_use_cntr++;					
+						gain[i] = (int)(path_loss*ant_gain*128.0); // scaled by 2^7
+					} else {
+						gain[i] = 0;
+					}
+				} else {
+					gain[i] = 0;
+				}
+		#else
 				gain[i] = (int)(path_loss*ant_gain*128.0); // scaled by 2^7
+		#endif /* USE_RESTRICTIONS */
 			}
 		}
 
@@ -2308,7 +2345,11 @@ void *gps_task(void *arg)
 		grx = incGpsTime(grx, 0.1);
 
 		// Update time counter
+#ifdef USE_RESTRICTIONS
+		printf("\rEnabled SV: %d / %d   Time into run = %4.1f", sv_in_use_cntr, sv_in_availble_cntr, subGpsTime(grx, g0));
+#else
 		printf("\rTime into run = %4.1f", subGpsTime(grx, g0));
+#endif /* USE_RESTRICTIONS */
 		fflush(stdout);
 	}
 #ifdef WIN32
