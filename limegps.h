@@ -46,6 +46,18 @@
 // Activate gamepad support
 //#define USE_GAMEPAD
 
+// Activate restriction support
+#define USE_RESTRICTIONS
+
+#ifdef USE_RESTRICTIONS
+typedef struct {
+	float elevation_mini_deg;
+	float azimuth_start_deg;
+	float azimuth_stop_deg;
+	int   max_enabled_SV;
+} restrictions_t;
+#endif /*USE_RESTRICTIONS*/
+
 typedef struct {
 	char navfile[MAX_CHAR];
 	char umfile[MAX_CHAR];
@@ -58,6 +70,9 @@ typedef struct {
 	int interactive;
 	int timeoverwrite;
 	int iono_enable;
+	#ifdef USE_RESTRICTIONS
+	restrictions_t restrictions;
+	#endif
 } option_t;
 
 typedef struct {
@@ -94,6 +109,7 @@ typedef struct {
 	pthread_cond_t fifo_write_ready;
 
 	double time;
+
 } sim_t;
 
 extern void *gps_task(void *arg);
